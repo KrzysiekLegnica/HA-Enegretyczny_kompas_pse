@@ -2,28 +2,46 @@ import aiohttp
 import async_timeout
 from datetime import datetime, timedelta
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.device_registry import DeviceInfo
 from .const import DOMAIN, STATE_MAPPING
 
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
-    update_interval = config_entry.data.get("update_interval", 6)
-    async_add_entities([EnergetycznyKompasSensor(update_interval)])
+    update_interval = entry.data.get("update_interval", 6)
+    async_add_entities([EnergetycznyKompasSensor(update_interval, entry)])
 
 
 class EnergetycznyKompasSensor(Entity):
     """Representation of the Energetyczny Kompas sensor."""
 
-    def __init__(self, update_interval):
+    def __init__(self, update_interval, entry):
         self._state = None
         self._attributes = {}
         self._update_interval = timedelta(hours=update_interval)
         self._last_update = None
+        self._entry_id = entry.entry_id
 
     @property
     def name(self):
         return "Energetyczny Kompas PSE"
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for this sensor."""
+        return f"{DOMAIN}_{self._entry_id}"
+
+    @property
+    def device_info(self):
+        """Return device info for the sensor."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry_id)},
+            name="Energetyczny Kompas PSE",
+            manufacturer="PSE",
+            model="Energetyczny Kompas",
+            entry_type="service",
+        )
 
     @property
     def state(self):
