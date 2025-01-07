@@ -8,9 +8,9 @@ from .const import DOMAIN, STATE_MAPPING
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
 
 COLOR_MAPPING = {
-    0: "#006400",  # Ciemno zielony
-    1: "#32CD32",  # Jasno zielony
-    2: "#FFA500",  # Pomarańczowy
+    0: "#006600",  # Ciemno zielony
+    1: "#ccff99",  # Jasno zielony
+    2: "#ffcc00",  # Pomarańczowy
     3: "#FF0000"   # Czerwony
 }
 
