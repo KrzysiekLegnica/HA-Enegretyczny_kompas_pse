@@ -28,9 +28,12 @@ class EnergetycznyKompasSensor(Entity):
         self._attributes = {}
         self._update_interval = timedelta(hours=update_interval)
         self._last_update = None
+        self._next_day_data = None  # Dane na następny dzień
         self._entry_id = entry.entry_id
         self._currently = None
         self._daily_max = None
+        self._next_day_max = None
+        self._next_day_min = None
 
     @property
     def name(self):
@@ -64,6 +67,9 @@ class EnergetycznyKompasSensor(Entity):
             "friendly_name": "Compass PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
+            "next_day_data": self._next_day_data,
+            "next_day_max": self._next_day_max,
+            "next_day_min": self._next_day_min,
             "color": COLOR_MAPPING.get(self._currently, "#000000"),  # Kolor ikony
             "all_data": self._attributes.get("all_data", []),
             "last_update": self._attributes.get("last_update", None),
@@ -77,42 +83,70 @@ class EnergetycznyKompasSensor(Entity):
 
         self._last_update = now
         today = now.strftime("%Y-%m-%d")
-        url = API_URL.format(date=today)
+        url_today = API_URL.format(date=today)
 
         async with aiohttp.ClientSession() as session:
             try:
                 with async_timeout.timeout(10):
-                    response = await session.get(url)
-                    if response.status == 200:
-                        data = await response.json()
-                        self._process_data(data)
+                    response_today = await session.get(url_today)
+                    if response_today.status == 200:
+                        data_today = await response_today.json()
+                        self._process_data(data_today, is_next_day=False)
+
+                    # Pobierz dane na następny dzień, jeśli aktualna godzina >= 18
+                    if now.hour >= 18:
+                        next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+                        url_next_day = API_URL.format(date=next_day)
+                        response_next_day = await session.get(url_next_day)
+                        if response_next_day.status == 200:
+                            data_next_day = await response_next_day.json()
+                            self._process_data(data_next_day, is_next_day=True)
+                        else:
+                            self._clear_next_day_data()
             except Exception as e:
                 self._attributes["error"] = str(e)
 
-    def _process_data(self, data):
+    def _process_data(self, data, is_next_day):
+        """Process data from API response."""
         now = datetime.now()
-        current_hour = now.strftime("%Y-%m-%d %H:00:00")
         all_data = data.get("value", [])
 
-        # Find the current hour's data
-        matched_entry = next(
-            (entry for entry in all_data if entry["udtczas"] == current_hour),
-            None
-        )
-
-        # Set the currently value
-        self._currently = matched_entry["znacznik"] if matched_entry else None
-
-        # Calculate the daily max
-        self._daily_max = max((entry["znacznik"] for entry in all_data), default=None)
-
-        # Update the state
-        if matched_entry:
-            znacznik = matched_entry["znacznik"]
-            self._state = STATE_MAPPING.get(znacznik, "UNKNOWN")
+        if is_next_day:
+            # Procesowanie danych na następny dzień
+            self._next_day_data = all_data
+            if all_data:
+                self._next_day_max = max((entry["znacznik"] for entry in all_data), default=None)
+                self._next_day_min = min((entry["znacznik"] for entry in all_data), default=None)
+            else:
+                self._next_day_max = None
+                self._next_day_min = None
         else:
-            self._state = "NO DATA"
+            # Procesowanie danych na bieżący dzień
+            current_hour = now.strftime("%Y-%m-%d %H:00:00")
+            matched_entry = next(
+                (entry for entry in all_data if entry["udtczas"] == current_hour),
+                None
+            )
 
-        # Update attributes
-        self._attributes["all_data"] = all_data
-        self._attributes["last_update"] = now.isoformat()
+            # Set the currently value
+            self._currently = matched_entry["znacznik"] if matched_entry else None
+
+            # Calculate the daily max
+            self._daily_max = max((entry["znacznik"] for entry in all_data), default=None)
+
+            # Update the state
+            if matched_entry:
+                znacznik = matched_entry["znacznik"]
+                self._state = STATE_MAPPING.get(znacznik, "UNKNOWN")
+            else:
+                self._state = "NO DATA"
+
+            # Update attributes
+            self._attributes["all_data"] = all_data
+            self._attributes["last_update"] = now.isoformat()
+
+    def _clear_next_day_data(self):
+        """Clear next day data if unavailable."""
+        self._next_day_data = None
+        self._next_day_max = None
+        self._next_day_min = None
