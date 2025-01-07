@@ -22,6 +22,8 @@ class EnergetycznyKompasSensor(Entity):
         self._update_interval = timedelta(hours=update_interval)
         self._last_update = None
         self._entry_id = entry.entry_id
+        self._currently = None
+        self._daily_max = None
 
     @property
     def name(self):
@@ -49,7 +51,15 @@ class EnergetycznyKompasSensor(Entity):
 
     @property
     def extra_state_attributes(self):
-        return self._attributes
+        """Return attributes of the sensor."""
+        return {
+            "icon": "mdi:lightning-bolt",
+            "friendly_name": "Compass PSE",
+            "currently": self._currently,
+            "daily_max": self._daily_max,
+            "all_data": self._attributes.get("all_data", []),
+            "last_update": self._attributes.get("last_update", None),
+        }
 
     async def async_update(self):
         """Fetch the latest data."""
@@ -74,15 +84,27 @@ class EnergetycznyKompasSensor(Entity):
     def _process_data(self, data):
         now = datetime.now()
         current_hour = now.strftime("%Y-%m-%d %H:00:00")
+        all_data = data.get("value", [])
+
+        # Find the current hour's data
         matched_entry = next(
-            (entry for entry in data.get("value", []) if entry["udtczas"] == current_hour),
+            (entry for entry in all_data if entry["udtczas"] == current_hour),
             None
         )
 
+        # Set the currently value
+        self._currently = matched_entry["znacznik"] if matched_entry else None
+
+        # Calculate the daily max
+        self._daily_max = max((entry["znacznik"] for entry in all_data), default=None)
+
+        # Update the state
         if matched_entry:
             znacznik = matched_entry["znacznik"]
             self._state = STATE_MAPPING.get(znacznik, "UNKNOWN")
         else:
             self._state = "NO DATA"
 
-        self._attributes["all_data"] = data.get("value", [])
+        # Update attributes
+        self._attributes["all_data"] = all_data
+        self._attributes["last_update"] = now.isoformat()
