@@ -1,4 +1,4 @@
-# Energetyczny Kompas PSE
+
 
 Energetyczny Kompas PSE to integracja Home Assistant, która dostarcza aktualny stan energetyczny jako sensor.
 
