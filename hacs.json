@@ -1,0 +1,7 @@
+{
+    "name": "Energetyczny Kompas PSE",
+    "content_in_root": false,
+    "domains": ["energetyczny_kompas_pse"],
+    "homeassistant": "2025.1.0",
+    "render_readme": true
+  }
