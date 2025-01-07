@@ -1,6 +1,6 @@
 
 
-Energetyczny Kompas PSE to integracja Home Assistant, która dostarcza aktualny stan energetyczny jako sensor.
+Energetyczny Kompas PSE to integracja Home Assistant, która dostarcza senspor zwracający zalecane zachowanie w stosunku do energii elektrcznej na podstawie danych Polskich Sieci Energetycznych. To dodatek który odzwięrciedla dane prezentowane w aplikacji Energetyczny Kompas PSE. Na podstawie tych danych Tauron będzie przeliczał ceny w ramach taryfy G14Dynamic.
 
 ## Możliwe stany
 - ZALECANE UŻYTKOWANIE
