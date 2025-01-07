@@ -63,7 +63,7 @@ class EnergetycznyKompasSensor(Entity):
     def extra_state_attributes(self):
         """Return attributes of the sensor."""
         return {
-            "icon": "mdi:lightning-bolt",
+            "icon": "mdi:lightning-bolt-circle",
             "friendly_name": "Compass PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
