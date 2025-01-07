@@ -7,6 +7,13 @@ from .const import DOMAIN, STATE_MAPPING
 
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
 
+COLOR_MAPPING = {
+    0: "#006400",  # Ciemno zielony
+    1: "#32CD32",  # Jasno zielony
+    2: "#FFA500",  # Pomarańczowy
+    3: "#FF0000"   # Czerwony
+}
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
     update_interval = entry.data.get("update_interval", 6)
@@ -57,6 +64,7 @@ class EnergetycznyKompasSensor(Entity):
             "friendly_name": "Compass PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
+            "color": COLOR_MAPPING.get(self._currently, "#000000"),  # Kolor ikony
             "all_data": self._attributes.get("all_data", []),
             "last_update": self._attributes.get("last_update", None),
         }
