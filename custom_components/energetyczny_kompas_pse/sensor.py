@@ -34,6 +34,7 @@ class EnergetycznyKompasSensor(Entity):
         self._daily_max = None
         self._next_day_max = None
         self._next_day_min = None
+        self._force_midnight_update = False  # Flaga wymuszenia aktualizacji o 00:01
 
     @property
     def name(self):
@@ -63,7 +64,7 @@ class EnergetycznyKompasSensor(Entity):
     def extra_state_attributes(self):
         """Return attributes of the sensor."""
         return {
-            "icon": "mdi:lightning-bolt-circle",
+            "icon": "mdi:lightning-bolt",
             "friendly_name": "Compass PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
@@ -78,31 +79,42 @@ class EnergetycznyKompasSensor(Entity):
     async def async_update(self):
         """Fetch the latest data."""
         now = datetime.now()
+
+        # Wymuszenie pobrania danych o 00:01
+        if now.hour == 0 and now.minute == 1 and not self._force_midnight_update:
+            self._force_midnight_update = True  # Zapobiega wielokrotnym pobraniom w ciągu tej samej minuty
+            await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
+            return
+
+        # Zresetowanie flagi po północy
+        if now.hour > 0:
+            self._force_midnight_update = False
+
+        # Regularne pobieranie danych w ramach interwału
         if self._last_update and now - self._last_update < self._update_interval:
             return
 
         self._last_update = now
-        today = now.strftime("%Y-%m-%d")
-        url_today = API_URL.format(date=today)
+        await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
+
+        # Pobranie danych na następny dzień po godzinie 18
+        if now.hour >= 18:
+            next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+            await self._fetch_data_for_day(next_day, is_next_day=True)
+
+    async def _fetch_data_for_day(self, date, is_next_day=False):
+        """Fetch data for a specific day."""
+        url = API_URL.format(date=date)
 
         async with aiohttp.ClientSession() as session:
             try:
                 with async_timeout.timeout(10):
-                    response_today = await session.get(url_today)
-                    if response_today.status == 200:
-                        data_today = await response_today.json()
-                        self._process_data(data_today, is_next_day=False)
-
-                    # Pobierz dane na następny dzień, jeśli aktualna godzina >= 18
-                    if now.hour >= 18:
-                        next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
-                        url_next_day = API_URL.format(date=next_day)
-                        response_next_day = await session.get(url_next_day)
-                        if response_next_day.status == 200:
-                            data_next_day = await response_next_day.json()
-                            self._process_data(data_next_day, is_next_day=True)
-                        else:
-                            self._clear_next_day_data()
+                    response = await session.get(url)
+                    if response.status == 200:
+                        data = await response.json()
+                        self._process_data(data, is_next_day=is_next_day)
+                    elif is_next_day:
+                        self._clear_next_day_data()
             except Exception as e:
                 self._attributes["error"] = str(e)
 
