@@ -1,6 +1,6 @@
 import aiohttp
 import async_timeout
-from datetime import datetime
+from datetime import datetime, timedelta
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 from .const import DOMAIN, SENSOR_NAME
@@ -12,6 +12,13 @@ STATE_MAPPING = {
     1: "NORMALNE UŻYTKOWANIE",
     3: "ZALECANE OSZCZĘDZANIE",
     4: "WYMAGANE OGRANICZANIE"
+}
+
+COLOR_MAPPING = {
+    0: "#006400",  # ciemnozielony
+    1: "#32CD32",  # jasnozielony
+    3: "#FFD700",  # ciemnożółty
+    4: "#FF0000"   # czerwony
 }
 
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
@@ -27,6 +34,7 @@ class EnergetycznyKompasSensor(Entity):
     def __init__(self):
         self._state = None
         self._attributes = {}
+        self._icon_color = None
 
     @property
     def name(self):
@@ -46,15 +54,12 @@ class EnergetycznyKompasSensor(Entity):
     @property
     def icon(self):
         """Return an icon based on the state."""
-        if self._state == "ZALECANE UŻYTKOWANIE":
-            return "mdi:check-circle"
-        elif self._state == "NORMALNE UŻYTKOWANIE":
-            return "mdi:information"
-        elif self._state == "ZALECANE OSZCZĘDZANIE":
-            return "mdi:alert"
-        elif self._state == "WYMAGANE OGRANICZANIE":
-            return "mdi:alert-circle"
         return "mdi:power"
+
+    @property
+    def icon_color(self):
+        """Return the icon color based on the state."""
+        return self._icon_color
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self):
@@ -72,9 +77,11 @@ class EnergetycznyKompasSensor(Entity):
                     else:
                         self._state = None
                         self._attributes = {"error": f"HTTP {response.status}"}
+                        self._icon_color = None
             except Exception as e:
                 self._state = None
                 self._attributes = {"error": str(e)}
+                self._icon_color = None
 
     def _process_data(self, data):
         """Process data from API response."""
@@ -88,8 +95,10 @@ class EnergetycznyKompasSensor(Entity):
         if matched_entry:
             znacznik = matched_entry["znacznik"]
             self._state = STATE_MAPPING.get(znacznik, "UNKNOWN")
+            self._icon_color = COLOR_MAPPING.get(znacznik, None)
         else:
             self._state = "NO DATA"
+            self._icon_color = None
 
         self._attributes = {
             "all_data": data.get("value", []),
