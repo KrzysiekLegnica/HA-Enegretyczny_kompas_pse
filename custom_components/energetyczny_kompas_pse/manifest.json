@@ -1,10 +1,13 @@
 {
     "domain": "energetyczny_kompas_pse",
     "name": "Energetyczny Kompas PSE",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "documentation": "https://github.com/twoj_user/energetyczny-kompas-pse",
     "requirements": ["aiohttp>=3.8.1"],
     "dependencies": [],
     "codeowners": ["krzysiek@lca.pl"],
-    "iot_class": "cloud_polling"
+    "iot_class": "cloud_polling",
+    "config_flow": true,
+     "logo": "custom_components/energetyczny_kompas_pse/icon.png"
   }
+  
