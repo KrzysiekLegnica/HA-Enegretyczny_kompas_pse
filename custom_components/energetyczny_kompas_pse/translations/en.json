@@ -1,8 +1,12 @@
 {
-    "state": {
-      "ZALECANE UŻYTKOWANIE": "Recommended Use",
-      "NORMALNE UŻYTKOWANIE": "Normal Use",
-      "ZALECANE OSZCZĘDZANIE": "Recommended Saving",
-      "WYMAGANE OGRANICZANIE": "Required Limiting"
+    "title": "Energetyczny Kompas PSE",
+    "step": {
+      "user": {
+        "title": "Configure Energetyczny Kompas PSE",
+        "data": {
+          "update_interval": "Update interval (hours)"
+        }
+      }
     }
   }
+  

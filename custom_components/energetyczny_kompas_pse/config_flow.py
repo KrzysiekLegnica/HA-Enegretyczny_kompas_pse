@@ -1,6 +1,7 @@
 from homeassistant import config_entries
 from homeassistant.core import callback
-from .const import DOMAIN
+import voluptuous as vol
+from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL
 
 class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Energetyczny Kompas PSE."""
@@ -10,39 +11,25 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
         if user_input is not None:
-            # Validate the input
-            interval = user_input.get("update_interval", 6)
-            if interval < 1 or interval > 24:
-                return self.async_show_form(
-                    step_id="user",
-                    errors={"update_interval": "invalid_interval"}
-                )
-
             return self.async_create_entry(
-                title="Energetyczny Kompas PSE", data={"update_interval": interval}
+                title="Energetyczny Kompas PSE", data={"update_interval": user_input["update_interval"]}
             )
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=self.add_suggested_values_to_schema(
-                {
-                    "update_interval": int,
-                },
-                {
-                    "update_interval": 6,  # Default to every 6 hours
-                },
-            ),
-        )
+        schema = vol.Schema({
+            vol.Required("update_interval", default=DEFAULT_UPDATE_INTERVAL): vol.All(int, vol.Range(min=1, max=24))
+        })
+
+        return self.async_show_form(step_id="user", data_schema=schema)
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        """Return the options flow handler."""
+        """Return the options flow."""
         return EnergetycznyKompasOptionsFlow(config_entry)
 
 
 class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
-    """Handle options flow for Energetyczny Kompas PSE."""
+    """Handle options for Energetyczny Kompas PSE."""
 
     def __init__(self, config_entry):
         self.config_entry = config_entry
@@ -52,12 +39,8 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        return self.async_show_form(
-            step_id="init",
-            data_schema=self.add_suggested_values_to_schema(
-                {
-                    "update_interval": int,
-                },
-                self.config_entry.options,
-            ),
-        )
+        schema = vol.Schema({
+            vol.Required("update_interval", default=self.config_entry.options.get("update_interval", 6)): vol.All(int, vol.Range(min=1, max=24))
+        })
+
+        return self.async_show_form(step_id="init", data_schema=schema)
