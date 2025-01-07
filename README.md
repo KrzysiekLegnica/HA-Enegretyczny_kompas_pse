@@ -1,4 +1,4 @@
-[![]HACS Default][hacs_shield]][hacs]
+[![HACS Default][hacs_shield]][hacs]
 
 
 
