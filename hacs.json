@@ -3,6 +3,6 @@
   "content_in_root": false,
   "domains": ["energetyczny_kompas_pse"],
   "homeassistant": "2023.9.0",
-  "render_readme": true
+  "render_readme": true,
   "logo": "logo.png"
 }
