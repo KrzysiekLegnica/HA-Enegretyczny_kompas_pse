@@ -18,7 +18,11 @@ COLOR_MAPPING = {
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
     update_interval = entry.data.get("update_interval", 1)  # Domyślny interwał co godzinę
-    async_add_entities([EnergetycznyKompasSensor(update_interval, entry)])
+    sensor = EnergetycznyKompasSensor(update_interval, entry)
+    async_add_entities([sensor])
+
+    # Natychmiastowe odświeżenie danych po dodaniu encji
+    await sensor.async_force_update()
 
 
 class EnergetycznyKompasSensor(Entity):
@@ -93,6 +97,21 @@ class EnergetycznyKompasSensor(Entity):
         if now.hour >= 18:
             next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
             await self._fetch_data_for_day(next_day, is_next_day=True)
+
+    async def async_force_update(self):
+        """Force update data immediately."""
+        now = ha_utcnow()
+
+        # Pobranie danych na bieżący dzień
+        await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
+
+        # Pobranie danych na następny dzień, jeśli jest po 18
+        if now.hour >= 18:
+            next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+            await self._fetch_data_for_day(next_day, is_next_day=True)
+
+        # Aktualizacja stanu encji na podstawie bieżących danych
+        self._update_current_state(now)
 
     async def _fetch_data_for_day(self, date, is_next_day=False):
         """Fetch data for a specific day from the API."""
