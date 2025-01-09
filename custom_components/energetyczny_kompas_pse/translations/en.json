@@ -1,12 +1,13 @@
 {
-    "title": "Energetyczny Kompas PSE",
-    "step": {
-      "user": {
-        "title": "Configure Energetyczny Kompas PSE",
-        "data": {
-          "update_interval": "Update interval (hours)"
-        }
+  "config": {
+      "step": {
+          "user": {
+              "data": {
+                  "update_interval": "Frequency of data retrieval from PSE"
+              },
+              "description": "Configure the Energetyczny Kompas PSE integration. Select how often data should be retrieved.",
+              "title": "Energetyczny Kompas PSE Configuration"
+          }
       }
-    }
   }
-  
+}

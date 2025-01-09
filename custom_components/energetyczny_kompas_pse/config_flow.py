@@ -16,10 +16,19 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         schema = vol.Schema({
-            vol.Required("update_interval", default=DEFAULT_UPDATE_INTERVAL): vol.All(int, vol.Range(min=1, max=24))
+            vol.Required(
+                "update_interval",
+                default=DEFAULT_UPDATE_INTERVAL
+            ): vol.All(int, vol.Range(min=1, max=24))
         })
 
-        return self.async_show_form(step_id="user", data_schema=schema)
+        return self.async_show_form(
+            step_id="user",
+            data_schema=schema,
+            description_placeholders={
+                "update_interval": "Częstotliwość pobierania danych z PSE"
+            }
+        )
 
     @staticmethod
     @callback
@@ -40,7 +49,16 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         schema = vol.Schema({
-            vol.Required("update_interval", default=self.config_entry.options.get("update_interval", 6)): vol.All(int, vol.Range(min=1, max=24))
+            vol.Required(
+                "update_interval",
+                default=self.config_entry.options.get("update_interval", 6)
+            ): vol.All(int, vol.Range(min=1, max=24))
         })
 
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            description_placeholders={
+                "update_interval": "Częstotliwość pobierania danych z PSE"
+            }
+        )

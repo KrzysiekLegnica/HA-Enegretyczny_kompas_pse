@@ -1,12 +1,13 @@
 {
-    "title": "Energetyczny Kompas PSE",
-    "step": {
-      "user": {
-        "title": "Konfiguruj Energetyczny Kompas PSE",
-        "data": {
-          "update_interval": "Interwał aktualizacji (godziny)"
-        }
+  "config": {
+      "step": {
+          "user": {
+              "data": {
+                  "update_interval": "Częstotliwość pobierania danych z PSE"
+              },
+              "description": "Skonfiguruj integrację Energetyczny Kompas PSE. Wybierz, jak często mają być pobierane dane.",
+              "title": "Konfiguracja Energetycznego Kompasu PSE"
+          }
       }
-    }
   }
-  
+}
