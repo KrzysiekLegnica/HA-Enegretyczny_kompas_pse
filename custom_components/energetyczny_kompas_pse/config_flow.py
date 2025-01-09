@@ -15,7 +15,6 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title="Energetyczny Kompas PSE", data={"update_interval": user_input["update_interval"]}
             )
 
-        # Dodanie opisu ustawienia
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
@@ -61,6 +60,6 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=schema,
             description_placeholders={
-                "update_interval": "Częstotliwość odświeżania danych (w godzinach)"
-            }
+                "update_interval": "Ustaw interwał odświeżania danych w godzinach (1-24)."
+            )
         )
