@@ -15,10 +15,9 @@ COLOR_MAPPING = {
     3: "#FF0000"   # Czerwony
 }
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
-    update_interval = entry.data.get("update_interval", 1)  # Domyślny interwał co godzinę
+    update_interval = entry.data.get("update_interval", 6)  # Domyślny interwał co 6 godzin
     async_add_entities([EnergetycznyKompasSensor(update_interval, entry)])
 
 
@@ -32,11 +31,8 @@ class EnergetycznyKompasSensor(Entity):
         self._entry_id = entry.entry_id
         self._currently = None
         self._daily_max = None
-        self._next_day_max = None
-        self._next_day_min = None
-        self._next_update_time = None  # Czas następnego odświeżenia
-        self._next_day_data = None  # Dane na następny dzień
-        self._force_midnight_update = False  # Flaga wymuszenia aktualizacji o 00:01
+        self._all_data = []  # Przechowywane dane z API
+        self._next_update_time = None  # Czas następnego pobrania danych z API
 
     @property
     def name(self):
@@ -70,47 +66,25 @@ class EnergetycznyKompasSensor(Entity):
             "friendly_name": "Compass PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
-            "next_day_data": self._next_day_data,
-            "next_day_max": self._next_day_max,
-            "next_day_min": self._next_day_min,
-            "color": COLOR_MAPPING.get(self._currently, "#000000"),  # Kolor ikony
-            "all_data": self._attributes.get("all_data", []),
+            "color": COLOR_MAPPING.get(self._currently, "#000000"),
+            "all_data": self._all_data,
             "last_update": self._attributes.get("last_update", None),
-            "next_update_time": self._next_update_time.isoformat() if self._next_update_time else None,
         }
 
     async def async_update(self):
         """Fetch the latest data."""
         now = ha_utcnow()
 
-        # Wymuszenie aktualizacji o pełnej godzinie
-        if self._next_update_time and now < self._next_update_time:
-            return
+        # Aktualizacja stanu encji o pełnej godzinie
+        self._update_current_state(now)
 
-        # Ustawienie czasu następnego odświeżenia na pełną godzinę
-        next_update = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
-        self._next_update_time = next_update
-
-        # Wymuszenie aktualizacji o 00:01
-        if now.hour == 0 and now.minute == 1 and not self._force_midnight_update:
-            self._force_midnight_update = True
+        # Pobranie nowych danych z API, jeśli minął interwał
+        if not self._next_update_time or now >= self._next_update_time:
+            self._next_update_time = now + self._update_interval
             await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
-            return
 
-        # Reset flagi po północy
-        if now.hour > 0:
-            self._force_midnight_update = False
-
-        # Pobranie danych na bieżący dzień
-        await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
-
-        # Pobranie danych na następny dzień po godzinie 18
-        if now.hour >= 18:
-            next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
-            await self._fetch_data_for_day(next_day, is_next_day=True)
-
-    async def _fetch_data_for_day(self, date, is_next_day=False):
-        """Fetch data for a specific day."""
+    async def _fetch_data_for_day(self, date):
+        """Fetch data for a specific day from the API."""
         url = API_URL.format(date=date)
 
         async with aiohttp.ClientSession() as session:
@@ -119,53 +93,38 @@ class EnergetycznyKompasSensor(Entity):
                     response = await session.get(url)
                     if response.status == 200:
                         data = await response.json()
-                        self._process_data(data, is_next_day=is_next_day)
-                    elif is_next_day:
-                        self._clear_next_day_data()
+                        self._process_api_data(data)
+                    else:
+                        self._attributes["error"] = f"API error: {response.status}"
             except Exception as e:
                 self._attributes["error"] = str(e)
 
-    def _process_data(self, data, is_next_day):
-        """Process data from API response."""
-        now = ha_now()
+    def _process_api_data(self, data):
+        """Process data fetched from the API."""
         all_data = data.get("value", [])
+        self._all_data = all_data
 
-        if is_next_day:
-            # Procesowanie danych na następny dzień
-            self._next_day_data = all_data
-            if all_data:
-                self._next_day_max = max((entry["znacznik"] for entry in all_data), default=None)
-                self._next_day_min = min((entry["znacznik"] for entry in all_data), default=None)
-            else:
-                self._next_day_max = None
-                self._next_day_min = None
+        # Oblicz maksymalny znacznik dla dnia
+        if all_data:
+            self._daily_max = max(entry["znacznik"] for entry in all_data)
         else:
-            # Procesowanie danych na bieżący dzień
-            current_hour = now.strftime("%Y-%m-%d %H:00:00")
-            matched_entry = next(
-                (entry for entry in all_data if entry["udtczas"] == current_hour),
-                None
-            )
+            self._daily_max = None
 
-            # Set the currently value
-            self._currently = matched_entry["znacznik"] if matched_entry else None
+        # Ustawienie czasu ostatniej aktualizacji
+        self._attributes["last_update"] = ha_utcnow().isoformat()
 
-            # Calculate the daily max
-            self._daily_max = max((entry["znacznik"] for entry in all_data), default=None)
+    def _update_current_state(self, now):
+        """Update the current state based on previously fetched data."""
+        current_hour = now.strftime("%Y-%m-%d %H:00:00")
+        matched_entry = next(
+            (entry for entry in self._all_data if entry["udtczas"] == current_hour),
+            None
+        )
 
-            # Update the state
-            if matched_entry:
-                znacznik = matched_entry["znacznik"]
-                self._state = STATE_MAPPING.get(znacznik, "UNKNOWN")
-            else:
-                self._state = "NO DATA"
-
-            # Update attributes
-            self._attributes["all_data"] = all_data
-            self._attributes["last_update"] = now.isoformat()
-
-    def _clear_next_day_data(self):
-        """Clear next day data if unavailable."""
-        self._next_day_data = None
-        self._next_day_max = None
-        self._next_day_min = None
+        # Ustawienie wartości currently i stanu
+        if matched_entry:
+            self._currently = matched_entry["znacznik"]
+            self._state = STATE_MAPPING.get(self._currently, "UNKNOWN")
+        else:
+            self._currently = None
+            self._state = "NO DATA"
