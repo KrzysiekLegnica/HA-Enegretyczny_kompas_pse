@@ -15,11 +15,11 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title="Energetyczny Kompas PSE", data={"update_interval": user_input["update_interval"]}
             )
 
-        # Zmieniamy domyślną wartość suwaka na 1
+        # Dodanie opisu ustawienia
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
-                default=1  # Domyślna wartość na 1 godzinę
+                default=DEFAULT_UPDATE_INTERVAL
             ): vol.All(int, vol.Range(min=1, max=24))
         })
 
@@ -27,7 +27,7 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=schema,
             description_placeholders={
-                "update_interval": "Częstotliwość pobierania danych z PSE"
+                "update_interval": "Częstotliwość odświeżania danych (w godzinach)"
             }
         )
 
@@ -49,11 +49,11 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Ustawiamy domyślną wartość opcji na 1 godzinę, jeśli brak zapisanych opcji
+        # Dodanie opisu dla opcji
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
-                default=self.config_entry.options.get("update_interval", 1)  # Domyślna wartość na 1 godzinę
+                default=self.config_entry.options.get("update_interval", DEFAULT_UPDATE_INTERVAL)
             ): vol.All(int, vol.Range(min=1, max=24))
         })
 
@@ -61,6 +61,6 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=schema,
             description_placeholders={
-                "update_interval": "Częstotliwość pobierania danych z PSE"
+                "update_interval": "Częstotliwość odświeżania danych (w godzinach)"
             }
         )
