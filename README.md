@@ -23,8 +23,7 @@ Więcej informacji: Energetyczny Kompas PSE  https://www.energetycznykompas.pl/
 1. Dodaj to repozytorium ( https://github.com/KrzysiekLegnica/HA-Enegretyczny_kompas_pse ) jako niestandardowe w HACS.
 2. Zresetu.
 3. Zainstaluj integrację Home Assistant.
-4. Możesz wybrać z jakim interwałem godzinowym dane będa pobierane z PSE
-5. Integracja zostanie dodan.
+5. Integracja zostanie dodana i zostanie utworzona encja **energetyczny_kompas_pse**.
 
 ## Dodatkowe dane
 
