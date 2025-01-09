@@ -6,7 +6,7 @@ from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL
 class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Energetyczny Kompas PSE."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
@@ -48,7 +48,7 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Zastąpienie "update_interval" czytelną nazwą
+        # Włączenie bardziej opisowej etykiety dla pola
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
@@ -56,9 +56,10 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
             ): vol.All(int, vol.Range(min=1, max=24))
         })
 
+        # Brak możliwości dodania opisu pola, ale można zmienić jego nazwę na bardziej opisową
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
-            description_placeholders=None,
+            description_placeholders={},
             errors=None
         )
