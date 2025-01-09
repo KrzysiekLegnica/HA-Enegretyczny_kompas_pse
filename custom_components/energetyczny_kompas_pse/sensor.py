@@ -3,6 +3,7 @@ import async_timeout
 from datetime import datetime, timedelta
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.util.dt import now as ha_now, utcnow as ha_utcnow
 from .const import DOMAIN, STATE_MAPPING
 
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
@@ -17,7 +18,7 @@ COLOR_MAPPING = {
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
-    update_interval = entry.data.get("update_interval", 1)  # Domyślnie co godzinę
+    update_interval = entry.data.get("update_interval", 1)  # Domyślny interwał co godzinę
     async_add_entities([EnergetycznyKompasSensor(update_interval, entry)])
 
 
@@ -28,13 +29,13 @@ class EnergetycznyKompasSensor(Entity):
         self._state = None
         self._attributes = {}
         self._update_interval = timedelta(hours=update_interval)
-        self._last_update = None
-        self._next_day_data = None  # Dane na następny dzień
         self._entry_id = entry.entry_id
         self._currently = None
         self._daily_max = None
         self._next_day_max = None
         self._next_day_min = None
+        self._next_update_time = None  # Czas następnego odświeżenia
+        self._next_day_data = None  # Dane na następny dzień
         self._force_midnight_update = False  # Flaga wymuszenia aktualizacji o 00:01
 
     @property
@@ -75,27 +76,32 @@ class EnergetycznyKompasSensor(Entity):
             "color": COLOR_MAPPING.get(self._currently, "#000000"),  # Kolor ikony
             "all_data": self._attributes.get("all_data", []),
             "last_update": self._attributes.get("last_update", None),
+            "next_update_time": self._next_update_time.isoformat() if self._next_update_time else None,
         }
 
     async def async_update(self):
         """Fetch the latest data."""
-        now = datetime.now()
+        now = ha_utcnow()
 
-        # Wymuszenie pobrania danych o 00:01
+        # Wymuszenie aktualizacji o pełnej godzinie
+        if self._next_update_time and now < self._next_update_time:
+            return
+
+        # Ustawienie czasu następnego odświeżenia na pełną godzinę
+        next_update = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        self._next_update_time = next_update
+
+        # Wymuszenie aktualizacji o 00:01
         if now.hour == 0 and now.minute == 1 and not self._force_midnight_update:
             self._force_midnight_update = True
             await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
             return
 
-        # Zresetowanie flagi po północy
+        # Reset flagi po północy
         if now.hour > 0:
             self._force_midnight_update = False
 
-        # Regularne pobieranie danych w ramach interwału
-        if self._last_update and now - self._last_update < self._update_interval:
-            return
-
-        self._last_update = now
+        # Pobranie danych na bieżący dzień
         await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
 
         # Pobranie danych na następny dzień po godzinie 18
@@ -121,7 +127,7 @@ class EnergetycznyKompasSensor(Entity):
 
     def _process_data(self, data, is_next_day):
         """Process data from API response."""
-        now = datetime.now()
+        now = ha_now()
         all_data = data.get("value", [])
 
         if is_next_day:
