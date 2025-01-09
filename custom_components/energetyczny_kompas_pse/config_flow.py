@@ -15,10 +15,11 @@ class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title="Energetyczny Kompas PSE", data={"update_interval": user_input["update_interval"]}
             )
 
+        # Zmieniamy domyślną wartość suwaka na 1
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
-                default=DEFAULT_UPDATE_INTERVAL
+                default=1  # Domyślna wartość na 1 godzinę
             ): vol.All(int, vol.Range(min=1, max=24))
         })
 
@@ -48,6 +49,7 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        # Ustawiamy domyślną wartość opcji na 1 godzinę, jeśli brak zapisanych opcji
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
