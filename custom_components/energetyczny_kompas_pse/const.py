@@ -1,6 +1,6 @@
 DOMAIN = "energetyczny_kompas_pse"
-DEFAULT_UPDATE_INTERVAL = 2
 
+# Mapowanie stanów
 STATE_MAPPING = {
     0: "ZALECANE UŻYTKOWANIE",
     1: "NORMALNE UŻYTKOWANIE",

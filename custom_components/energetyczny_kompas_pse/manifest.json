@@ -7,7 +7,7 @@
     "codeowners": ["@KrzysiekLegnica"],
     "iot_class": "cloud_polling",
     "config_flow": true,
-    "version": "v0.0.7",
+    "version": "v0.1.0",
     "logo": "custom_components/energetyczny_kompas_pse/icon.png"
   }
   
