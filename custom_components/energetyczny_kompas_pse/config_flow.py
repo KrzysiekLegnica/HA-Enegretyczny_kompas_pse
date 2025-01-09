@@ -51,7 +51,7 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
-                default=self.config_entry.options.get("update_interval", 6)
+                default=self.config_entry.options.get("update_interval", 1)  # Domyślna wartość na 1 godzinę
             ): vol.All(int, vol.Range(min=1, max=24))
         })
 
