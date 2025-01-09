@@ -1,13 +1,28 @@
 {
-  "config": {
-      "step": {
-          "user": {
-              "data": {
-                  "update_interval": "Częstotliwość pobierania danych z PSE"
-              },
-              "description": "Skonfiguruj integrację Energetyczny Kompas PSE. Wybierz, jak często mają być pobierane dane.",
-              "title": "Konfiguracja Energetycznego Kompasu PSE"
-          }
-      }
-  }
+    "title": "Energetyczny Kompas PSE",
+    "config": {
+        "step": {
+            "user": {
+                "title": "Dodaj Energetyczny Kompas PSE",
+                "description": "Integracja Energetyczny Kompas PSE została dodana. Nie wymaga dalszej konfiguracji.",
+                "data": {}
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "",
+                "description": ""
+            }
+        }
+    },
+    "system_options": {
+        "step": {
+            "init": {
+                "title": "",
+                "description": ""
+            }
+        }
+    }
 }
