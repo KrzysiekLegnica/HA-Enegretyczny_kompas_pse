@@ -6,7 +6,7 @@ from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL
 class EnergetycznyKompasConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Energetyczny Kompas PSE."""
 
-    VERSION = 3
+    VERSION = 2
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
