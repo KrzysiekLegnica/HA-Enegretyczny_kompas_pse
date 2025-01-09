@@ -14,9 +14,10 @@ COLOR_MAPPING = {
     3: "#FF0000"   # Czerwony
 }
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
-    update_interval = entry.data.get("update_interval", 6)
+    update_interval = entry.data.get("update_interval", 1)  # Domyślnie co godzinę
     async_add_entities([EnergetycznyKompasSensor(update_interval, entry)])
 
 
@@ -82,7 +83,7 @@ class EnergetycznyKompasSensor(Entity):
 
         # Wymuszenie pobrania danych o 00:01
         if now.hour == 0 and now.minute == 1 and not self._force_midnight_update:
-            self._force_midnight_update = True  # Zapobiega wielokrotnym pobraniom w ciągu tej samej minuty
+            self._force_midnight_update = True
             await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
             return
 
