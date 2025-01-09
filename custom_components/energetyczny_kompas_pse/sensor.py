@@ -15,6 +15,8 @@ COLOR_MAPPING = {
     3: "#FF0000"   # Czerwony
 }
 
+SENSOR_VERSION = "1.5.0"  # Aktualizacja wersji
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
     update_interval = entry.data.get("update_interval", 1)  # Domyślny interwał co godzinę
@@ -70,7 +72,7 @@ class EnergetycznyKompasSensor(Entity):
         """Return attributes of the sensor."""
         return {
             "icon": "mdi:lightning-bolt",
-            "friendly_name": "Compass PSE",
+            "friendly_name": "Energetyczny Kompas PSE",
             "currently": self._currently,
             "daily_max": self._daily_max,
             "next_day_data": self._next_day_data,
@@ -79,6 +81,7 @@ class EnergetycznyKompasSensor(Entity):
             "color": COLOR_MAPPING.get(self._currently, "#000000"),
             "all_data": self._all_data,
             "last_update": self._attributes.get("last_update", None),
+            "version": SENSOR_VERSION
         }
 
     async def async_update(self):
@@ -90,7 +93,7 @@ class EnergetycznyKompasSensor(Entity):
 
         # Pobranie nowych danych z API, jeśli minął interwał
         if not self._next_update_time or now >= self._next_update_time:
-            self._next_update_time = now + self._update_interval
+            self._next_update_time = (now + self._update_interval).replace(minute=0, second=0, microsecond=0)
             await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
 
         # Pobranie danych dla następnego dnia po godzinie 18
@@ -160,6 +163,10 @@ class EnergetycznyKompasSensor(Entity):
             (entry for entry in self._all_data if entry["udtczas"] == current_hour),
             None
         )
+
+        # Debugowanie dopasowania
+        self._attributes["debug_matched_entry"] = matched_entry
+        self._attributes["debug_current_hour"] = current_hour
 
         # Ustawienie wartości currently i stanu
         if matched_entry:
