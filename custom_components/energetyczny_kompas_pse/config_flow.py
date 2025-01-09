@@ -48,7 +48,7 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        # Dodanie opisu dla opcji
+        # Zastąpienie "update_interval" czytelną nazwą
         schema = vol.Schema({
             vol.Required(
                 "update_interval",
@@ -59,7 +59,6 @@ class EnergetycznyKompasOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=schema,
-            description_placeholders={
-                "update_interval": "Ustaw interwał odświeżania danych w godzinach (1-24)."
-            )
+            description_placeholders=None,
+            errors=None
         )
