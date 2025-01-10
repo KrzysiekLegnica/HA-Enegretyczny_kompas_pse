@@ -1,7 +1,7 @@
 {
     "domain": "energetyczny_kompas_pse",
     "name": "Energetyczny Kompas PSE",
-    "documentation": "https://github.com/KrzysiekLegnica/HA-Enegretyczny_kompas_pse",
+    "documentation": "https://github.com/KrzysiekLegnica/HA-Energetyczny_kompas_pse",
     "requirements": ["aiohttp>=3.8.1"],
     "dependencies": [],
     "codeowners": ["@KrzysiekLegnica"],
