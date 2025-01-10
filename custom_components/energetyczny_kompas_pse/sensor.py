@@ -3,7 +3,7 @@ import async_timeout
 from datetime import datetime, timedelta
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.util.dt import now as ha_now, utcnow as ha_utcnow
+from homeassistant.util.dt import now as ha_now
 from .const import DOMAIN, STATE_MAPPING
 
 API_URL = "https://api.raporty.pse.pl/api/pdgsz?$select=znacznik,udtczas&$filter=business_date eq '{date}'"
@@ -15,7 +15,7 @@ COLOR_MAPPING = {
     3: "#FF0000"   # Czerwony
 }
 
-SENSOR_VERSION = "0.1.0"  # Wersja po zmianach
+SENSOR_VERSION = "0.1.0"  # Wersja z poprawką czasu lokalnego
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the sensor."""
@@ -34,12 +34,12 @@ class EnergetycznyKompasSensor(Entity):
         self._attributes = {}
         self._entry_id = entry.entry_id
         self._currently = None
+        self._next_hour = None  # Stan dla następnej godziny
         self._daily_max = None
         self._next_day_data = None  # Dane na następny dzień
         self._next_day_max = None
         self._next_day_min = None
         self._all_data = []  # Przechowywane dane z API
-        self._next_update_time = None  # Czas następnego odświeżenia danych
 
     @property
     def name(self):
@@ -72,6 +72,7 @@ class EnergetycznyKompasSensor(Entity):
             "icon": "mdi:lightning-bolt",
             "friendly_name": "Energetyczny Kompas PSE",
             "currently": self._currently,
+            "next_hour": self._next_hour,
             "daily_max": self._daily_max,
             "next_day_data": self._next_day_data,
             "next_day_max": self._next_day_max,
@@ -84,7 +85,7 @@ class EnergetycznyKompasSensor(Entity):
 
     async def async_update(self):
         """Fetch the latest data."""
-        now = ha_utcnow()
+        now = ha_now()
 
         # Pobranie danych na bieżący dzień
         await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
@@ -98,7 +99,7 @@ class EnergetycznyKompasSensor(Entity):
 
     async def async_force_update(self):
         """Force update data immediately."""
-        now = ha_utcnow()
+        now = ha_now()
 
         # Pobranie danych na bieżący dzień
         await self._fetch_data_for_day(now.strftime("%Y-%m-%d"))
@@ -151,23 +152,28 @@ class EnergetycznyKompasSensor(Entity):
     def _update_current_state(self, now):
         """Update the current state and attributes based on previously fetched data."""
         current_hour = now.strftime("%Y-%m-%d %H:00:00")
+        next_hour = (now + timedelta(hours=1)).strftime("%Y-%m-%d %H:00:00")
+
         matched_entry = next(
             (entry for entry in self._all_data if entry["udtczas"] == current_hour),
             None
         )
+        next_hour_entry = next(
+            (entry for entry in self._all_data if entry["udtczas"] == next_hour),
+            None
+        )
 
-        # Debugowanie dopasowania
-        self._attributes["debug_matched_entry"] = matched_entry
-        self._attributes["debug_current_hour"] = current_hour
+        # Ustawienie wartości currently i next_hour
+        self._currently = matched_entry["znacznik"] if matched_entry else None
+        self._next_hour = next_hour_entry["znacznik"] if next_hour_entry else None
 
-        # Ustawienie wartości currently i stanu
+        # Ustawienie stanu encji
         if matched_entry:
-            self._currently = matched_entry["znacznik"]
             self._state = STATE_MAPPING.get(self._currently, "UNKNOWN")
         else:
-            self._currently = None
             self._state = "NO DATA"
 
-        # Aktualizacja atrybutów na podstawie bieżącej godziny
+        # Aktualizacja atrybutów
         self._attributes["currently"] = self._currently
-        self._attributes["last_update"] = ha_utcnow().isoformat()
+        self._attributes["next_hour"] = self._next_hour
+        self._attributes["last_update"] = ha_now().isoformat()
